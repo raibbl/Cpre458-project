@@ -1,11 +1,7 @@
-/*******************************************************************************
-*
-* CprE 308 Scheduling Lab
-*
-* scheduling.c
-*******************************************************************************/
+
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 int numoftasks = 0;
 struct task
 {
@@ -25,7 +21,9 @@ struct task
 /* Forward declarations of Scheduling algorithms */
 void first_come_first_served(struct task *proc);
 void shortest_remaining_time(struct task *proc);
-void checkfeasibility(int numoftasks,struct task *proc);
+void checkfeasibility(int numoftasks, struct task *proc);
+
+
 
 int main()
 {
@@ -46,8 +44,8 @@ int main()
     }
 
     /* Show task values */
-    printf("  task and ci and pi");
-   
+    printf("\n\n Task Set: \n");
+
     for (i = 0; i < numoftasks; i++)
     {
         printf("  Task %d  (%d,%d)", i + 1, proc[i].runtime,
@@ -55,34 +53,38 @@ int main()
     }
 
     //check schedubality
-    memcpy(proc_copy, proc, numoftasks * sizeof(struct task));
-   
-    checkfeasibility(numoftasks,proc_copy);
+    // memcpy(proc_copy, proc, numoftasks * sizeof(struct task));
 
+    checkfeasibility(numoftasks, proc);
+   
 
     return 0;
 }
 
-/*return 1 if task set can be scheduled by edf, o otherwise*/
-int checkedf(int numoftasks,struct task *proc)
+float tasksetutil(int numoftasks, struct task *proc)
 {
     int i = 0;
     double sumofutli = 0;
-    
-    printf("num of tasks: %d\n",numoftasks);
     for (i = 0; i < numoftasks; i++)
-    {   
-        
-       
+    {
+
         double ci = proc[i].runtime;
         double pi = proc[i].period;
-        
-        double utiloftask = ci/pi;
-        
+
+        double utiloftask = ci / pi;
+
         sumofutli = sumofutli + utiloftask;
     }
 
-    printf("\ntask set utlization is %lf\n", sumofutli);
+    printf("\n\ntask set utlization is %lf\n\n", sumofutli);
+    return sumofutli;
+}
+/*return 1 if task set can be scheduled by edf, o otherwise*/
+int checkedf(int numoftasks, struct task *proc)
+{
+    int i = 0;
+
+    double sumofutli = tasksetutil(numoftasks, proc);
 
     if (sumofutli <= 1)
     {
@@ -94,21 +96,149 @@ int checkedf(int numoftasks,struct task *proc)
     }
 }
 
-void checkrms(int numoftasks,struct task *proc)
+/*returns the task with lowest priorty*/
+
+int findlowestp(int numoftasks, struct task *proc)
 {
+    int i = 0;
+    int max = 0;
+    int indexofmax = 0;
+
+    for (i = 0; i < numoftasks; i++)
+    {
+
+        double pi = proc[i].period;
+
+        if (pi > max)
+        {   
+            max=pi;
+            indexofmax = i;
+        }
+    }
+
+    return indexofmax;
 }
 
-void checkfeasibility(int numoftasks,struct task *proc)
+int checkrms(int numoftasks, struct task *proc)
 {
-    int edf = checkedf(numoftasks,proc);
+    double sumofutli = tasksetutil(numoftasks, proc);
 
-    if (edf == 1)
+    double x = (numoftasks);
+    double y = 1 / x;
+    double rmscheck = x * (pow(2.0, y) - 1);
+
+    if (sumofutli <= rmscheck)
     {
-        printf("task set is schedulable by edf");
+
+        return 1;
     }
     else
     {
-        printf("task is not schedulable by edf");
+
+        //exact analysis required
+
+        //first find lowest piorty task;
+        int taskwithlowestpindex = findlowestp(numoftasks, proc);
+        double cioflowestp = proc[taskwithlowestpindex].runtime;
+        double pioflowestp = proc[taskwithlowestpindex].period;
+
+        int wc = 0;
+        int i = 0;
+        int old_wc;
+
+       
+
+        do
+        {
+             old_wc=wc;
+            wc=0;
+            if (i == 0)
+            {
+                wc = cioflowestp; //just ci of lowest task priorty
+                i++;
+            }
+            else if(i==1){
+                int j;
+
+                for (j = 0; j < numoftasks; j++)
+                {
+                    if (j != taskwithlowestpindex)
+                    {
+                        
+                        
+                        double othertaskpi = proc[j].period;
+                        //printf("  %lf",othertaskpi);
+                        double ratio=(cioflowestp/othertaskpi);
+                       // printf("  %lf",ratio);
+                        
+                        wc = wc+ceil(ratio)*proc[j].runtime;
+                    }
+                }
+                i++;
+
+                wc = wc + cioflowestp;
+                 printf("  %d",wc);
+                if(wc>pioflowestp){ 
+                    //not schduable
+                    return 0;
+                }
+            }
+            else
+            {
+
+                int j;
+
+                for (j = 0; j < numoftasks; j++)
+                {
+                    if (j != taskwithlowestpindex)
+                    {
+                        
+                       
+                        double othertaskpi = proc[j].period;
+                        //printf("  %lf",othertaskpi);
+                        double ratio=(old_wc/othertaskpi);
+                        //printf("  %lf",ratio);
+                        
+                        wc = wc+ceil(ratio)*proc[j].runtime;
+                    }
+                }
+                i++;
+
+                wc = wc + cioflowestp;
+                printf("  %d",wc);
+                if(wc>pioflowestp){ 
+                    //not schduable
+                    return 0;
+                }
+            }
+
+        } while (wc !=old_wc);
+
+        return 1; //exact analysis confirms test
+    }
+}
+
+void checkfeasibility(int numoftasks, struct task *proc)
+{
+    int edf = checkedf(numoftasks, proc);
+    int rms = checkrms(numoftasks, proc);
+
+    if (edf == 1)
+    {
+        printf("task set is schedulable by edf\n");
+    }
+    else
+    {
+        printf("task is not schedulable by edf\n");
+    }
+
+    if (rms == 1)
+    {
+        printf("task set is schedulable by rms\n");
+    }
+    else
+    {
+        printf("task is not schedulable by rms\n");
     }
 }
 
