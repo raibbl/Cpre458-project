@@ -407,7 +407,7 @@ void rms(int numoftasks, struct task *proc)
                     }
 
                     //if there is nothing there yet and this task is done then move on with time
-                    if (proc[i].flag == 12 && something_mightbethere == 20)
+                    if (proc[i].flag == 12 && something_mightbethere != 20)
                     {
                         time++;
                     }
@@ -460,6 +460,7 @@ void rms(int numoftasks, struct task *proc)
                     
                     time++;
                     if(time >= proc[i].arrivaltime){
+                        proc[i].starttime=time;
                         proc[i].flag = 00;
                     }
                 }
