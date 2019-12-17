@@ -27,6 +27,8 @@ struct task
 void first_come_first_served(struct task *proc);
 void rms(int numoftasks, struct task *proc);
 void checkfeasibility(int numoftasks, struct task *proc);
+void edf(int numoftasks, struct task *proc);
+
 
 int main()
 {
@@ -55,11 +57,13 @@ int main()
                proc[i].period);
     }
 
-    //check schedubality
+    // check schedubality
+   
     // memcpy(proc_copy, proc, numoftasks * sizeof(struct task));
 
     // checkfeasibility(numoftasks, proc);
-    rms(numoftasks, proc);
+   // rms(numoftasks, proc);
+    edf(numoftasks,proc);
 
     return 0;
 }
@@ -397,12 +401,12 @@ void rms(int numoftasks, struct task *proc)
                             something_mightbethere = 20;
                         }
                         //check if there is a task not done and needs completeion
-                        if (proc[j].flag != 12&&proc[i].flag==12)
+                        if (proc[j].flag != 12 && proc[i].flag == 12)
                         {
-                           if(!something_mightbethere==20){
+                            if (!something_mightbethere == 20)
+                            {
                                 something_mightbethere = j;
-                           }
-                           
+                            }
                         }
                     }
 
@@ -429,7 +433,7 @@ void rms(int numoftasks, struct task *proc)
                 int Higher_exsitance_coming = 0;
                 int something_mightbethere = 600;
                 int compare_me = 50000;
-                int compare_me2=100;
+                int compare_me2 = 100;
                 int breaking = 0;
                 proc[i].starttime = time;
 
@@ -444,23 +448,24 @@ void rms(int numoftasks, struct task *proc)
                 for (j = 0; j < numoftasks; j++)
                 {
                     //check if there is a task not done and needs completeion
-                    if (proc[j].flag != 12&&proc[i].flag==12)
-                    {   
-                        if(compare_me==50000){
-                         something_mightbethere = j;
-                         compare_me2=1;
+                    if (proc[j].flag != 12 && proc[i].flag == 12)
+                    {
+                        if (compare_me == 50000)
+                        {
+                            something_mightbethere = j;
+                            compare_me2 = 1;
                         }
-                      
                     }
                 }
 
                 //if there is nothing there yet and this task is done then move on with time
                 if (proc[i].flag == 12 && something_mightbethere == 600)
-                {   
-                    
+                {
+
                     time++;
-                    if(time >= proc[i].arrivaltime){
-                        proc[i].starttime=time;
+                    if (time >= proc[i].arrivaltime)
+                    {
+                        proc[i].starttime = time;
                         proc[i].flag = 00;
                     }
                 }
@@ -471,11 +476,11 @@ void rms(int numoftasks, struct task *proc)
                     i = something_mightbethere;
                     break; //go check who is here
                 }
-                else if(compare_me2==1){
-                    
-                     i = something_mightbethere;
-                     proc[i].starttime=time;
-                   
+                else if (compare_me2 == 1)
+                {
+
+                    i = something_mightbethere;
+                    proc[i].starttime = time;
                 }
 
                 while (proc[i].remainingtime > 0)
@@ -502,7 +507,7 @@ void rms(int numoftasks, struct task *proc)
                         proc[i].remainingtime--;
                     }
                     else
-                    {   
+                    {
                         breaking = 1;
                         break;
                     }
@@ -534,6 +539,145 @@ void rms(int numoftasks, struct task *proc)
                 else
                 {
                     i++;
+                }
+            }
+        }
+    }
+}
+
+int earliestdedlinetaskcheck(int numoftasks, struct task *proc, int current_task_index)
+{
+    int i = 0;
+    int indexofsmallest = current_task_index;
+    for (i = 0; i < numoftasks; i++)
+    {
+        if ((proc[current_task_index].arrivaltime > proc[i].arrivaltime))
+        {
+            indexofsmallest = i;
+        }
+    }
+    return indexofsmallest;
+}
+
+void edf(int numoftasks, struct task *proc)
+{
+    //sort task first by period
+    int i = 0;
+    int j = 0;
+    for (i = 0; i < numoftasks; i++)
+    {
+
+        for (j = i; j < numoftasks; j++)
+        {
+            if (proc[i].period >= proc[j].period)
+            {
+
+                struct task temp;
+                temp = proc[i];
+                proc[i] = proc[j];
+                proc[j] = temp;
+            }
+        }
+    }
+
+    //find LCM
+
+    double lcm = lcmtasks(numoftasks, proc);
+
+    printf(" LCM = %lf\n", lcm);
+
+    //how many insances of each task? && intilize each task
+    for (i = 0; i < numoftasks; i++)
+    {
+        double taskperiod = proc[i].period;
+        proc[i].instancesP = floor(lcm / taskperiod);
+        printf("instance::: %d", proc[i].instancesP);
+        proc[i].instancesleft = proc[i].instancesP;
+        proc[i].remainingtime = proc[i].runtime;
+        proc[i].arrivaltime = proc[i].period;
+        proc[i].priority = 1 + i;
+    }
+
+    //populate arrivaltimes
+    for (i = 0; i < numoftasks; i++)
+    {
+
+        for (j = 0; j < proc[i].instancesP; j++)
+        {
+            proc[i].arrivaltimes[j] = proc[i].period * (j + 1);
+        }
+    }
+
+    //EDF schduler:
+    int time = 0; //track time through scheduling
+    i = 0;
+
+    while (lcm != time || alltasksdone(numoftasks, proc) != 1)
+    {
+        int x = 0;
+        for (x = 0; x < numoftasks; x++)
+        {
+            if (time >= proc[x].arrivaltime)
+            {
+                proc[x].flag = 00;
+            }
+        }
+
+        if (proc[i].instancesleft == proc[i].instancesP)
+        {
+
+            proc[i].starttime = time;
+            while (proc[i].remainingtime > 0)
+            {
+                time++;
+                proc[i].remainingtime--;
+            }
+            proc[i].endtime = time;
+            proc[i].instancesleft--;
+            proc[i].remainingtime = proc[i].runtime;
+            printf("Task %d Started from %d till time %d\n", i, proc[i].starttime, proc[i].endtime);
+            if (i + 1 < numoftasks)
+            {
+                i++;
+            }
+            else{
+                i=0;
+            }
+        }
+        else
+        {
+            proc[i].starttime = time;
+
+            
+            while (earliestdedlinetaskcheck(numoftasks, proc, i) == i && proc[i].remainingtime != 0)
+            {
+                time++;
+                proc[i].remainingtime--;
+            }
+
+            proc[i].endtime = time;
+
+            if (proc[i].remainingtime != 0)
+            {
+
+                printf("Task %d Started from %d till time %d , actually got premptied\n", i, proc[i].starttime, proc[i].endtime);
+                i = earliestdedlinetaskcheck(numoftasks, proc, i);
+            }
+            else
+            {   
+               
+                proc[i].arrivaltime = proc[i].starttime + proc[i].period; //dynamic deadline
+            
+
+                proc[i].instancesleft--;
+                proc[i].remainingtime = proc[i].runtime;
+                printf("Task %d Started from %d till time %d\n", i, proc[i].starttime, proc[i].endtime);
+                if (i + 1 < numoftasks)
+                {
+                    i++;
+                }
+                else{
+                    i=0;
                 }
             }
         }
