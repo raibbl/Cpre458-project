@@ -48,7 +48,15 @@ int main()
         scanf("%d", &proc[i].period);
     }
 
-    /* Show task values */
+   
+
+    // check schedubality
+   
+    memcpy(proc_copy, proc, numoftasks * sizeof(struct task));
+
+    checkfeasibility(numoftasks, proc);
+    
+     /* Show task values */
     printf("\n\n Task Set: \n");
 
     for (i = 0; i < numoftasks; i++)
@@ -56,14 +64,6 @@ int main()
         printf("  Task %d  (%d,%d)", i + 1, proc[i].runtime,
                proc[i].period);
     }
-
-    // check schedubality
-   
-    // memcpy(proc_copy, proc, numoftasks * sizeof(struct task));
-
-    // checkfeasibility(numoftasks, proc);
-   // rms(numoftasks, proc);
-    edf(numoftasks,proc);
 
     return 0;
 }
@@ -83,7 +83,7 @@ float tasksetutil(int numoftasks, struct task *proc)
         sumofutli = sumofutli + utiloftask;
     }
 
-    printf("\n\ntask set utlization is %lf\n\n", sumofutli);
+   // printf("\n\ntask set utlization is %lf\n\n", sumofutli);
     return sumofutli;
 }
 /*return 1 if task set can be scheduled by edf, o otherwise*/
@@ -94,11 +94,13 @@ int checkedf(int numoftasks, struct task *proc)
     double sumofutli = tasksetutil(numoftasks, proc);
 
     if (sumofutli <= 1)
-    {
+    {   
+        printf("EDF: %f <= 1\n",sumofutli);
         return 1;
     }
     else
-    {
+    {   
+        printf("EDF: %f <= 1\n",sumofutli);
         return 0;
     }
 }
@@ -136,7 +138,7 @@ int checkrms(int numoftasks, struct task *proc)
 
     if (sumofutli <= rmscheck)
     {
-
+        printf("RMS: %f <= %f\n",sumofutli,rmscheck);
         return 1;
     }
     else
@@ -152,7 +154,7 @@ int checkrms(int numoftasks, struct task *proc)
         int wc = 0;
         int i = 0;
         int old_wc;
-
+        printf("Exact Analysis: WC=%d\n",wc);
         do
         {
             old_wc = wc;
@@ -179,12 +181,15 @@ int checkrms(int numoftasks, struct task *proc)
                         wc = wc + ceil(ratio) * proc[j].runtime;
                     }
                 }
+                
                 i++;
 
                 wc = wc + cioflowestp;
-                printf("  %d", wc);
+                printf("Exact Analysis WC= %d\n",wc);
+
                 if (wc > pioflowestp)
-                {
+                {   
+                     printf("Exact Analysis: WC=%d >Pi   \n",wc);
                     //not schduable
                     return 0;
                 }
@@ -205,14 +210,16 @@ int checkrms(int numoftasks, struct task *proc)
                         //printf("  %lf",ratio);
 
                         wc = wc + ceil(ratio) * proc[j].runtime;
+                        
                     }
                 }
                 i++;
 
                 wc = wc + cioflowestp;
-                printf("  %d", wc);
+                 printf("Exact Analysis WC= %d\n",wc);
                 if (wc > pioflowestp)
-                {
+                {   
+                    printf("Exact Analysis: WC=%d\n>Pi",wc);
                     //not schduable
                     return 0;
                 }
@@ -226,20 +233,22 @@ int checkrms(int numoftasks, struct task *proc)
 
 void checkfeasibility(int numoftasks, struct task *proc)
 {
-    int edf = checkedf(numoftasks, proc);
-    int rms = checkrms(numoftasks, proc);
+    int edfv = checkedf(numoftasks, proc);
+    int rmsv = checkrms(numoftasks, proc);
 
-    if (edf == 1)
+    if (edfv == 1)
     {
         printf("task set is schedulable by edf\n");
+        edf(numoftasks, proc);
     }
     else
     {
         printf("task is not schedulable by edf\n");
     }
 
-    if (rms == 1)
-    {
+    if (rmsv == 1)
+    {   
+        rms(numoftasks, proc);
         printf("task set is schedulable by rms\n");
     }
     else
@@ -320,7 +329,7 @@ void rms(int numoftasks, struct task *proc)
     {
         double taskperiod = proc[i].period;
         proc[i].instancesP = floor(lcm / taskperiod);
-        printf("instance::: %d", proc[i].instancesP);
+       // printf("instance::: %d", proc[i].instancesP);
         proc[i].instancesleft = proc[i].instancesP;
         proc[i].remainingtime = proc[i].runtime;
         proc[i].arrivaltime = proc[i].period;
@@ -591,7 +600,7 @@ void edf(int numoftasks, struct task *proc)
     {
         double taskperiod = proc[i].period;
         proc[i].instancesP = floor(lcm / taskperiod);
-        printf("instance::: %d", proc[i].instancesP);
+       // printf("instance::: %d", proc[i].instancesP);
         proc[i].instancesleft = proc[i].instancesP;
         proc[i].remainingtime = proc[i].runtime;
         proc[i].arrivaltime = proc[i].period;
