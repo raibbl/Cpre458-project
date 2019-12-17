@@ -235,7 +235,8 @@ void checkfeasibility(int numoftasks, struct task *proc)
 {
     int edfv = checkedf(numoftasks, proc);
     int rmsv = checkrms(numoftasks, proc);
-
+    struct task proc_copy[numoftasks]; 
+     memcpy(proc_copy, proc, numoftasks * sizeof(struct task));
     if (edfv == 1)
     {
         printf("task set is schedulable by edf\n");
@@ -248,8 +249,9 @@ void checkfeasibility(int numoftasks, struct task *proc)
 
     if (rmsv == 1)
     {   
-        rms(numoftasks, proc);
+       
         printf("task set is schedulable by rms\n");
+        rms(numoftasks, (proc_copy));
     }
     else
     {
@@ -347,6 +349,7 @@ void rms(int numoftasks, struct task *proc)
     }
 
     //RMS schduler:
+     printf("RMS Schedule:::::::\n");
     int time = 0; //track time through scheduling
     i = 0;
 
@@ -552,6 +555,7 @@ void rms(int numoftasks, struct task *proc)
             }
         }
     }
+    printf("--------------------------------\n");
 }
 
 int earliestdedlinetaskcheck(int numoftasks, struct task *proc, int current_task_index)
@@ -616,7 +620,7 @@ void edf(int numoftasks, struct task *proc)
             proc[i].arrivaltimes[j] = proc[i].period * (j + 1);
         }
     }
-
+    printf("EDF Schedule:::::::\n");
     //EDF schduler:
     int time = 0; //track time through scheduling
     i = 0;
@@ -657,8 +661,10 @@ void edf(int numoftasks, struct task *proc)
         {
             proc[i].starttime = time;
 
-            
-            while (earliestdedlinetaskcheck(numoftasks, proc, i) == i && proc[i].remainingtime != 0)
+            if(lcm==time){
+                break;
+            }
+            while (earliestdedlinetaskcheck(numoftasks, proc, i) == i && proc[i].remainingtime != 0&&lcm != time )
             {
                 time++;
                 proc[i].remainingtime--;
@@ -690,5 +696,7 @@ void edf(int numoftasks, struct task *proc)
                 }
             }
         }
+     
     }
+       printf("--------------------------------\n");
 }
